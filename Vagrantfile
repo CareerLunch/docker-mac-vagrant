@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
   env_box_name = ENV["BOX_NAME"]
   env_ram = ENV["RAM_MEMORY"]
   env_cpus = ENV["CPU_COUNT"]
-  env_share_path = ENV["SHARE_PATH"]
+  env_share_path = File.expand_path("../../")
 
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
@@ -37,6 +37,14 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision :docker
   config.vm.provision "shell", path: "provision.sh"
+  config.vm.provision "shell" do |s|
+    work_email = `gpg --list-secret-keys | grep -Eo "[a-z]+@careerlunch.com"`
+    gpg_key = `gpg --export-secret-key --armor #{work_email}`
+    s.inline = <<-SHELL
+      echo "#{gpg_key}" | gpg --import
+    SHELL
+    s.privileged = false
+  end
 
   config.trigger.after :up do |trigger|
     trigger.warn = "Configuring SSH and Docker via post-provisioning trigger..."
